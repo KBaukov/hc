@@ -1,0 +1,11 @@
+{
+    "DbConnectionString": "root:koko@/hc?parseTime=true",
+    "LoggerPath": "",
+	"Server": {
+		"Address": "localhost",
+		"Port": "8080",
+		"TLS": true,
+		"CertificatePath": "server.crt",
+		"KeyPath": "server.key"
+	}
+}
