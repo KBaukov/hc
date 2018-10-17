@@ -11,8 +11,6 @@ Ext.define('ControlTab', {
     }, 
     initPanel: function() {
       this.kotelTabPanel   = Ext.create('KotelTabPanel',  {papa: this} );
-      //this.devices = Ext.create('Devices',{papa: this});      
-      //this.formPanel    = Ext.create('SearchFormPanel',{papa: this});
     }
 });
 

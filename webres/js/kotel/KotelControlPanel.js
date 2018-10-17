@@ -59,12 +59,12 @@ Ext.define('KotelControlPanel', {
         this.listeners = { scope: this,
             afterrender: function(){ 
                 this.led1 = document.getElementById("led1");
-                this.d1 = document.getElementById("dig1");
-                this.d2 = document.getElementById("dig2");
-                this.dot = document.getElementById("dot");
-                this.bl = document.getElementById("leftButt");
-                this.br = document.getElementById("rightButt");
-                this.bo = document.getElementById("okButt");
+                this.d1 =   document.getElementById("dig1");
+                this.d2 =   document.getElementById("dig2");
+                this.dot =  document.getElementById("dot");
+                this.bl =   document.getElementById("leftButt");
+                this.br =   document.getElementById("rightButt");
+                this.bo =   document.getElementById("okButt");
                 this.bl.onclick = this.leftClick;
                 this.br.onclick = this.rightClick;
                 this.bo.onclick = this.okClick;
@@ -75,6 +75,7 @@ Ext.define('KotelControlPanel', {
     },
     leftClick: function(ev) {
         var cmp =Ext.getCmp('kotelControlPanel');
+        cmp.pressButt("L");
         if(cmp.mode==0) {
             if(cmp.curSatgeInx==0) {
                 cmp.curSatgeInx = 3;
@@ -105,10 +106,11 @@ Ext.define('KotelControlPanel', {
         
         cmp.dispCurrentView();
             
-        cmp.command += "L";
+        //cmp.command += "L";
     },    
     rightClick: function(ev) {
         var cmp =Ext.getCmp('kotelControlPanel');
+        cmp.pressButt("R");
         if(cmp.mode==0) {
             if(cmp.curSatgeInx==3) {
                 cmp.curSatgeInx = 0;
@@ -138,10 +140,11 @@ Ext.define('KotelControlPanel', {
         
         cmp.dispCurrentView();
         
-        cmp.command += "R";
+        //cmp.command += "R";
     },
     okClick: function(ev) {
         var cmp =Ext.getCmp('kotelControlPanel');
+        cmp.pressButt("M");
         if(cmp.stage[cmp.curSatgeInx]=='pr') return;
         if(cmp.mode==0) {
             cmp.mode=1;
@@ -156,7 +159,7 @@ Ext.define('KotelControlPanel', {
         
         //cmp.dispCurrentView();
         
-        cmp.command += "M";
+        //cmp.command += "M";
     },    
     dispCurrentView: function() {
         if(this.mode==0) this.display(this.currVal[this.curSatgeInx]);
@@ -179,8 +182,8 @@ Ext.define('KotelControlPanel', {
             d2 = val.substr(0,1);
         }
         
-        this.d1.style.backgroundImage ='url("../img/kotel/dr'+d1+'.png")';
-        this.d2.style.backgroundImage ='url("../img/kotel/dr'+d2+'.png")';
+        this.d1.style.backgroundImage ='url("../webres/img/kotel/dr'+d1+'.png")';
+        this.d2.style.backgroundImage ='url("../webres/img/kotel/dr'+d2+'.png")';
     },
     sendCommands: function() {
         var comm = this.command; 
@@ -208,6 +211,19 @@ Ext.define('KotelControlPanel', {
         Ext.Ajax.request({
             url: '/api/setdestt', scope: this, method: 'GET',
             params: {desttp: this.destVal[0], destto: this.destVal[1], destkw: this.destVal[2]},
+            success: function(response, opts) {
+              var ansv = Ext.decode(response.responseText);
+              if(ansv.success) {  
+
+              } else error_mes('Ошибка', 'ErrorCode:'+ansv.error.errorCode+"; "+ansv.error.errorMessage);  
+            },
+            failure: function() { }
+        });
+    },
+    pressButt: function(butt) {
+        Ext.Ajax.request({
+            url: '/api/pressbutt', scope: this, method: 'GET',
+            params: {button: butt},
             success: function(response, opts) {
               var ansv = Ext.decode(response.responseText);
               if(ansv.success) {  

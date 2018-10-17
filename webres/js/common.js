@@ -24,39 +24,22 @@ Ext.Ajax.on('requestexception', function(conn, response, opt) {
 });
 
 relogin = function() {
-    LoginWin.items.items[1].getForm().reset();
-    LoginWin.items.items[1].getForm().getFields().items[0].setValue(init.user.userName);
-    LoginWin.show();
-    maskShow(true);
-    Ext.getCmp('loginFormPass').focus(false, 2000);
+    CloseWin();
 };
 
-maskShow = function(on) {    
-    if(on) {
-        var masks = Ext.query('div.x-mask', Ext.getDom('body'));
-        var lm = masks.length-1;
-        loginShadowId = masks[lm].id;
-        masks[lm].style.opacity = 1;
-        masks[lm].style.backgroundImage= 'url("/webres/extjs/img/fon1.png")';
-        //clearTimeout(screenLockT);
-    } else {
-        var m = Ext.getDom(loginShadowId);
-        m.style.backgroundImage= '';
-        m.style.opacity = 0;
-        m.style.display = 'none';
-        slCounter = 0;
-        screenLockT=setTimeout(screenLock, 60000);
-    }
-};
+
 
 screenLock = function() {
     clearTimeout(screenLockT);
-    if(slCounter++>1) {        
+    if(slCounter) {        
         relogin();
     } else {
-        screenLockT=setTimeout(screenLock, 60000);
+        screenLockT=setTimeout(screenLock, 500);
+        slCounter = true;
     }
+    console.log('--- ' + slCounter);
 };
+
 //##############################################################################
 
 reloginRequest = function() {
@@ -64,7 +47,7 @@ reloginRequest = function() {
     var data = LoginWin.items.items[1].getForm().getValues();
     LoginWin.items.items[1].getForm().getFields().items[0].disable();
     Ext.Ajax.request({
-        url: '/logout',
+        url: '/loguot',
         params: data,
         scope: LoginWin,
         callback: function(options, success, response) {
@@ -86,7 +69,7 @@ LoginWin = new Ext.Window({
         items: [
             new Ext.Panel({
               region: 'west', width: 60, frame: false,  border: false,margins:'3 0 3 3', cmargins:'3 3 3 3',
-              bodyStyle: 'background: url(/webres/extjs/img/gpg-icon.png) center no-repeat;'              
+              bodyStyle: 'background: url(/extjs/img/gpg-icon.png) center no-repeat;'              
             }),
             new Ext.form.FormPanel({
               region: 'center', margins:'3 3 3 3', standardSubmit: true, labelWidth: 50, frame: true, labelPad: 10,
@@ -179,6 +162,7 @@ confirmMess = function(mes) {
 //    };
 //}();
 
+
 Ext.grid.feature.Grouping.override({
 	/**
 	 * Override the default getGroupRows implementation to add the column
@@ -233,3 +217,6 @@ function getElementPosition(elemId) {
 
     return {"left":l, "top":t, "width": w, "height":h};
 }
+
+
+

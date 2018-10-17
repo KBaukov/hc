@@ -42,18 +42,6 @@ Ext.define('KotelViewPanel', {
         this.listeners = { scope: this,
             afterrender: function(){ 
                 this.getValues();  
-//                var m3 = document.getElementById("metka3");
-//                m3.onmousedown = function(ev) {  
-//                    dtLock = false;  return false;
-//                };
-//                m3.onmouseup = function(ev) {  
-//                    dtLock = true;  return false;
-//                };
-////                m3.onmouseout = function(ev) {  
-////                    dtLock = true;  
-////                }
-//                m3.onmousemove =this.changeDest;
-                Ext.TaskManager.start(this.task);
             },
             resize: function(){ 
                 this.resize();
@@ -70,11 +58,7 @@ Ext.define('KotelViewPanel', {
                 '</br></br></br><div>Температура воды в накопителе</div>'+
                 '</br><div><div class="prText" style="float:left">0°</div><div class="prText" style="float:right">100°</div></div></br>' +
                 '<div class="shLine" id="metka2" style="top:145px;">60.44°<div></div></div>'+
-                '<div class="fillPr" id="gradusnik2"><div class="fillPrG" id="shkala2" style="width:100px"></div></div>'+
-                '</br></br></br><div>Температура воздуха на кухне</div>'+
-                '</br><div><div class="prText" style="float:left">0°</div><div class="prText" style="float:right">100°</div></div></br>' +
-                '<div class="shLine" id="metka4" style="top:242px;">19.44°<div></div></div>'+
-                '<div class="fillPr" id="gradusnik3"><div class="fillPrG" id="shkala3" style="width:100px"></div></div>';
+                '<div class="fillPr" id="gradusnik2"><div class="fillPrG" id="shkala2" style="width:100px"></div></div>';
         
         this.tbar = [
             { text: ' Целевое значение: ', xtype: 'text'},
@@ -110,12 +94,6 @@ Ext.define('KotelViewPanel', {
         m3.style.left = parseInt(baseW*this.destt/100 - 9) +'px';
         m3.innerHTML = '<div></div>'+this.destt.toFixed(2)+'°';
         
-        var m4 = document.getElementById("metka4");
-        m4.style.left = parseInt(baseW*this.t1/100 - 9) +'px';
-        m4.innerHTML = '<div></div>'+this.t1.toFixed(2)+'°';
-        var sh3 = document.getElementById("shkala3");
-        sh3.style.width = parseInt(baseW*this.t1/100) +'px';
-        
     },
     getValues: function() {
         Ext.Ajax.request({
@@ -123,29 +101,20 @@ Ext.define('KotelViewPanel', {
             success: function(response, opts) {
               var ansv = Ext.decode(response.responseText);
               if(ansv.success) {  
-                  this.tp = parseFloat(ansv.tp);
-                  this.to = parseFloat(ansv.to);
-                  this.t1 = parseFloat(ansv.t1);
-                  this.t2 = parseFloat(ansv.t2);
-                  this.t3 = parseFloat(ansv.t3);
-                  this.destt = parseFloat(ansv.desttc);
+                  this.tp = parseFloat(ansv.data.tp);
+                  this.to = parseFloat(ansv.data.to);
+                  this.destt = parseFloat(ansv.data.desttc);
                   
-                  this.papa.kotelControlPanel.currVal[0]=parseInt(ansv.tp)+"";
-                  this.papa.kotelControlPanel.currVal[1]=parseInt(ansv.to)+"";
-                  this.papa.kotelControlPanel.currVal[2]=parseInt(ansv.kw)+"";  
+                  this.papa.kotelControlPanel.currVal[0]=parseInt(ansv.data.tp)+"";
+                  this.papa.kotelControlPanel.currVal[1]=parseInt(ansv.data.to)+"";
+                  this.papa.kotelControlPanel.currVal[2]=parseInt(ansv.data.kw)+"";  
                   if(!this.destInit) {
-                    this.papa.kotelControlPanel.destVal[0]=parseInt(ansv.desttp)+"";
-                    this.papa.kotelControlPanel.destVal[1]=parseInt(ansv.destto)+"";
-                    this.papa.kotelControlPanel.destVal[2]=parseInt(ansv.destkw)+"";  
+                    this.papa.kotelControlPanel.destVal[0]=parseInt(ansv.data.desttp)+"";
+                    this.papa.kotelControlPanel.destVal[1]=parseInt(ansv.data.destto)+"";
+                    this.papa.kotelControlPanel.destVal[2]=parseInt(ansv.data.destkw)+"";  
                     this.destInit = true;
                   }
                   this.papa.kotelControlPanel.dispCurrentView();
-                  
-                  if(Ext.getDom('ht1')) {
-                        Ext.getDom('ht1').innerHTML = parseFloat(ansv.t1) +'°C</br></br>'+( (ansv.h1!='0.00') ? parseFloat(ansv.h1)+'%' : '');
-                        Ext.getDom('ht2').innerHTML = parseFloat(ansv.t2) +'°C</br></br>'+parseFloat(ansv.h2)+'%';
-                        Ext.getDom('ht3').innerHTML = parseFloat(ansv.t3) +'°C</br></br>'+parseFloat(ansv.h3)+'%';
-                   }
                   this.resize();
 
               } else error_mes('Ошибка', 'ErrorCode:'+ansv.error.errorCode+"; "+ansv.error.errorMessage);  

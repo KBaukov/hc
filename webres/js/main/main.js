@@ -12,7 +12,7 @@ Ext.onReady(function(){
   
   var ControlTab  = Ext.create('ControlTab');
   var SettingsTab  = Ext.create('SettingsTab');
-  var MapPanel  = Ext.create('MapPanel');
+  var MapPanel  = Ext.create('MapsTab');
   
   var MainPanel  = Ext.create('Ext.tab.Panel',{
     region: 'center',
@@ -37,7 +37,10 @@ Ext.onReady(function(){
 
   //ButtonPanel.updateSate();
 //  
-//  Ext.getDom('boby').onmousemove = function() { slCounter = 0; };
-//  slCounter = 0;
-//  screenLockT=setTimeout(screenLock, 60000);
+  Ext.getDom('boby').onmousemove = function(e) { 
+      slCounter = false;
+      //console.log('--- ' + slCounter);
+  };
+  slCounter = false;
+  screenLockT=setTimeout(screenLock, 300000);
 });

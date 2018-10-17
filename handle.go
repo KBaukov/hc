@@ -6,15 +6,28 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gorilla/sessions"
+	"github.com/gorilla/websocket"
+)
+
+var (
+	sessStore = sessions.NewCookieStore([]byte("33446a9dcf9ea060a0a6532b166da32f304af0de"))
 )
 
 func init() {
 	gob.Register(User{})
+	gob.Register(websocket.Conn{})
 
+	sessStore.Options = &sessions.Options{
+		Domain:   "localhost",
+		Path:     "/",
+		MaxAge:   3600 * 8, // 8 hours
+		HttpOnly: true,
+	}
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
@@ -62,13 +75,6 @@ func serveLogin(db dbService) http.HandlerFunc {
 			return
 		}
 
-		//		sess := getSession(w, r)
-
-		//		if sess.Values["user"] != nil {
-		//			log.Println("Login user: ", sess.Values["user"])
-		//			//http.Redirect(w, r, "/home", 301)
-		//		}
-
 		if r.Method == "POST" {
 
 			login := r.PostFormValue("username")
@@ -78,8 +84,6 @@ func serveLogin(db dbService) http.HandlerFunc {
 			if err != nil {
 				http.Error(w, "Ошибка обработки запроса", http.StatusInternalServerError)
 				log.Printf("Ошибка авторизации (логин: %v): %v", login, err)
-				//http.Error(w, "Ошибка доступа", http.StatusNonAuthoritativeInfo)
-				//return
 			}
 
 			if len(users) != 1 {
@@ -89,7 +93,7 @@ func serveLogin(db dbService) http.HandlerFunc {
 
 			u := *users[0]
 			log.Println("Login user: ", u)
-			createSession(w, r, u)
+			createSession(w, r, u, "user")
 
 			http.Redirect(w, r, "/home", 301)
 
@@ -123,72 +127,222 @@ func serveApi(db dbService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		log.Printf("incoming request in: %v", r.URL.Path)
-		if strings.Contains(r.URL.Path, "/getvalues") {
-			json := "{success:true,tp:30.56,to:45.12,kw:11,pr:2.23,desttp:60.00,destto:45.00,desttc:35.00,destkw:11}"
 
-			b := []byte(json)
-			w.Header().Set("Content-type", "application/json; charset=utf-8")
-			_, err := w.Write(b)
-			if err != nil {
-				log.Printf("Ошибка записи результата запроса: %v", err)
-			}
-			return
+		if r.URL.Path == "/api/getvalues" {
+			data := KotelData{0, 30.56, 45.12, 2.21, 11, 30.0, 45.0, 2.25, 11, 25.0, time.Now()}
+			apiDataResponse(w, data, nil)
 		}
-		if strings.Contains(r.URL.Path, "/devices") {
+		//##############
+		if r.URL.Path == "/api/devices" {
 			devices, err := db.getDevices()
-			if err != nil {
-				http.Error(w, "Ошибка обработки запроса", http.StatusInternalServerError)
-				log.Printf("Ошибка: %v", err)
-			}
-			data := ApiResp{SUCCESS: true, DATA: devices, MSG: ""}
-
-			jd, err := json.Marshal(data)
-			if err != nil {
-				http.Error(w, "Ошибка формирования ответа", http.StatusInternalServerError)
-				log.Printf("Ошибка маршалинга: %v", err)
-				return
-			}
-			w.Header().Set("Content-type", "application/json; charset=utf-8")
-			_, err = w.Write(jd)
-			if err != nil {
-				log.Printf("Ошибка записи результата запроса: %v", err)
-			}
-			return
+			apiDataResponse(w, devices, err)
 		}
-		if strings.Contains(r.URL.Path, "/users") {
+		if r.URL.Path == "/api/device/edit" {
+			id := r.PostFormValue("id")
+			intId, err := strconv.Atoi(id)
+			if err != nil {
+				log.Println("err:", err.Error())
+			}
+
+			devType := r.PostFormValue("type")
+			devName := r.PostFormValue("name")
+			ip := r.PostFormValue("ip")
+			actFlag := r.PostFormValue("active_flag")
+			descr := r.PostFormValue("description")
+
+			_, err = db.editDevice(intId, devType, devName, ip, actFlag, descr)
+			apiDataResponse(w, []int{}, err)
+		}
+		if r.URL.Path == "/api/device/delete" {
+			id := r.PostFormValue("id")
+			intId, err := strconv.Atoi(id)
+			if err != nil {
+				log.Println("err:", err.Error())
+			}
+
+			_, err = db.delDevice(intId)
+			apiDataResponse(w, []int{}, err)
+		}
+		//###################
+		if r.URL.Path == "/api/users" {
 			users, err := db.getUsers()
-			if err != nil {
-				http.Error(w, "Ошибка обработки запроса", http.StatusInternalServerError)
-				log.Printf("Ошибка: %v", err)
-			}
-			data := ApiResp{SUCCESS: true, DATA: users, MSG: ""}
-
-			ju, err := json.Marshal(data)
-			if err != nil {
-				http.Error(w, "Ошибка формирования ответа", http.StatusInternalServerError)
-				log.Printf("Ошибка маршалинга: %v", err)
-				return
-			}
-			w.Header().Set("Content-type", "application/json; charset=utf-8")
-			_, err = w.Write(ju)
-			if err != nil {
-				log.Printf("Ошибка записи результата запроса: %v", err)
-			}
-			return
+			apiDataResponse(w, users, err)
 		}
+		if r.URL.Path == "/api/user/edit" {
+			id := r.PostFormValue("id")
+			intId, err := strconv.Atoi(id)
+			if err != nil {
+				log.Println("err:", err.Error())
+			}
+
+			login := r.PostFormValue("login")
+			pass := r.PostFormValue("pass")
+			usrType := r.PostFormValue("user_type")
+			actFlag := r.PostFormValue("active_flag")
+			lastVs := r.PostFormValue("last_visit")
+			lastV, err := time.Parse("2006-01-02T00:00:00Z", lastVs)
+
+			if err != nil {
+				log.Println("date forma validation error:", err.Error())
+			}
+
+			_, err = db.editUser(intId, login, pass, usrType, actFlag, lastV)
+			apiDataResponse(w, []int{}, err)
+		}
+		if r.URL.Path == "/api/user/delete" {
+			id := r.PostFormValue("id")
+			intId, err := strconv.Atoi(id)
+			if err != nil {
+				log.Println("err:", err.Error())
+			}
+
+			_, err = db.delUser(intId)
+			apiDataResponse(w, []int{}, err)
+		}
+		//##################
+		if r.URL.Path == "/api/maps" {
+			maps, err := db.getMaps()
+			apiDataResponse(w, maps, err)
+		}
+		if r.URL.Path == "/api/maps/edit" {
+			ids := r.PostFormValue("id")
+			id, err := strconv.Atoi(ids)
+			if err != nil {
+				log.Println("err:", err.Error())
+			}
+			title := r.PostFormValue("title")
+			pict := r.PostFormValue("pict")
+
+			ws := r.PostFormValue("w")
+			wi, err := strconv.Atoi(ws)
+			if err != nil {
+				log.Println("err:", err.Error())
+			}
+			hs := r.PostFormValue("h")
+			h, err := strconv.Atoi(hs)
+			if err != nil {
+				log.Println("err:", err.Error())
+			}
+			descr := r.PostFormValue("description")
+
+			if err != nil {
+				log.Println("date forma validation error:", err.Error())
+			}
+
+			_, err = db.editMap(id, title, pict, wi, h, descr)
+			apiDataResponse(w, []int{}, err)
+		}
+		if r.URL.Path == "/api/maps/delete" {
+			ids := r.PostFormValue("id")
+			id, err := strconv.Atoi(ids)
+			if err != nil {
+				log.Println("err:", err.Error())
+			}
+
+			_, err = db.delMap(id)
+			apiDataResponse(w, []int{}, err)
+		}
+		//##############################################
+		if r.URL.Path == "/api/sensors" {
+			mapIds := r.PostFormValue("map_id")
+			mapId, err := strconv.Atoi(mapIds)
+			if err != nil {
+				log.Println("err:", err.Error())
+			} //////
+			sens, err := db.getMapSensors(mapId)
+			apiDataResponse(w, sens, err)
+		}
+		if r.URL.Path == "/api/sensors/edit" {
+			ids := r.PostFormValue("id")
+			id, err := strconv.Atoi(ids)
+			if err != nil {
+				log.Println("err:", err.Error())
+			} //////
+
+			mapIds := r.PostFormValue("map_id")
+			mapId, err := strconv.Atoi(mapIds)
+			if err != nil {
+				log.Println("err:", err.Error())
+			} /////
+
+			devIds := r.PostFormValue("dev_id")
+			devId, err := strconv.Atoi(devIds)
+			if err != nil {
+				log.Println("err:", err.Error())
+			} /////
+
+			xks := r.PostFormValue("xk")
+			xk, err := strconv.ParseFloat(xks, 64)
+			if err != nil {
+				log.Println("err:", err.Error())
+			} /////
+
+			yks := r.PostFormValue("yk")
+			yk, err := strconv.ParseFloat(yks, 64)
+			if err != nil {
+				log.Println("err:", err.Error())
+			} /////
+
+			sensorType := r.PostFormValue("type")
+			pict := r.PostFormValue("pict")
+			descr := r.PostFormValue("description")
+
+			_, err = db.editMapSensor(id, mapId, devId, sensorType, xk, yk, pict, descr)
+			apiDataResponse(w, []int{}, err)
+		}
+		if r.URL.Path == "/api/sensors/delete" {
+			ids := r.PostFormValue("id")
+			id, err := strconv.Atoi(ids)
+			if err != nil {
+				log.Println("err:", err.Error())
+			}
+
+			_, err = db.delMapSensor(id)
+			apiDataResponse(w, []int{}, err)
+		}
+		if r.URL.Path == "/api/sensors/lastid" {
+			sens, err := db.getLastId("map_sensors")
+			apiDataResponse(w, sens, err)
+		}
+		//##############################################
+		return
 	}
 }
 
-func createSession(w http.ResponseWriter, r *http.Request, u User) {
+func apiDataResponse(w http.ResponseWriter, data interface{}, err error) {
+	errMsg := ""
+	succes := true
 
-	//gob.Register(User{})
+	if err != nil {
+		http.Error(w, "Ошибка обработки запроса", http.StatusInternalServerError)
+		log.Printf("Ошибка: %v", err)
+		errMsg = err.Error()
+		succes = false
+	}
+
+	dataResp := ApiResp{SUCCESS: succes, DATA: data, MSG: errMsg}
+
+	json, err := json.Marshal(dataResp)
+	if err != nil {
+		http.Error(w, "Ошибка формирования ответа", http.StatusInternalServerError)
+		log.Printf("Ошибка маршалинга: %v", err)
+		return
+	}
+	w.Header().Set("Content-type", "application/json; charset=utf-8")
+	_, err = w.Write(json)
+	if err != nil {
+		log.Printf("Ошибка записи результата запроса: %v", err)
+	}
+}
+
+func createSession(w http.ResponseWriter, r *http.Request, o interface{}, key string) {
 
 	session, err := sessStore.Get(r, "session-name")
 	if err != nil {
 		log.Printf("Error getting session: %v", err)
 	}
 
-	session.Values["user"] = u //User{"Pogi", "Points", ""}
+	session.Values[key] = o //User{"Pogi", "Points", ""}
 	session.Save(r, w)
 
 	log.Println("Session initiated")
@@ -200,6 +354,5 @@ func getSession(w http.ResponseWriter, r *http.Request) *sessions.Session {
 		log.Printf("Error getting session: %v", err)
 		session, err = sessStore.New(r, "session-name")
 	}
-	//log.Println(session.Values["user"])
 	return session
 }
