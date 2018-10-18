@@ -25,15 +25,13 @@ Ext.define('Users', {
           {header: 'Тип пользователя', align: 'left', width: 110, dataIndex: 'user_type', editor: new Ext.form.field.ComboBox({
                     typeAhead: true,
                     triggerAction: 'all',
-                    store: [ ['admin','админ'], ['user','простой пользователь'] ]
+                    store: [ ['admin','админ'], ['user','пользователь'] ]
                 })
 	     },
           {header: 'Login', align: 'left', width: 100, dataIndex: 'login', editor: new Ext.form.TextField({ allowBlank: false }) },
-          {header: 'Pass', align: 'left', width: 100, dataIndex: 'pass', renderer: function() { return '*****'; }, editor: new Ext.form.TextField({ allowBlank: false }) },
+          {header: 'Pass', align: 'left', width: 100, dataIndex: 'pass', editor: new Ext.form.TextField({ allowBlank: false }) },
           {header: 'Статус', align: 'left', width: 110, dataIndex: 'active_flag', renderer: this.statusRenderer, editor: new Ext.form.field.ComboBox({
-                    typeAhead: true,
-                    triggerAction: 'all',
-                    store: [ ['Y','активен'], ['N','не активен'] ]
+                    typeAhead: true,  triggerAction: 'all',  store: [ ['Y','активен'], ['N','не активен'] ]
                 }) 
 		},
            {header: 'Дата последнего визита', align: 'left', width: 200, dataIndex: 'last_visit', renderer: Ext.util.Format.dateRenderer('d.m.Y H:i:s') },
@@ -91,7 +89,7 @@ Ext.define('Users', {
               {name: 'id', type: 'int'}, 
               {name: 'user_type'},
               {name: 'login'}, 
-              //{name: 'pass'}, 
+              {name: 'pass'}, 
               {name: 'active_flag'},
               {name: 'last_visit'}
             ]

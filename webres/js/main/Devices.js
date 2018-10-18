@@ -81,7 +81,7 @@ Ext.define('Devices', {
     initData: function() {
       this.papa = this.initConfig().papa;
       this.store =  Ext.create('Ext.data.JsonStore', {
-          storeId: 'devicesData', autoLoad: false,   
+          storeId: 'devicesData', autoLoad: false,  id: 'deviceStore', 
             proxy: {
                 type: 'ajax',
                 url: '/api/devices',

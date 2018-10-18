@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/gob"
+	"encoding/hex"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -80,6 +82,13 @@ func serveLogin(db dbService) http.HandlerFunc {
 			login := r.PostFormValue("username")
 			pass := r.PostFormValue("password")
 
+			pass, err := hashPass(pass)
+			if err != nil {
+				log.Printf("Ошибка хеширования", err)
+			}
+
+			//log.Println("pass: ", pass)
+
 			users, err := db.auth(login, pass)
 			if err != nil {
 				http.Error(w, "Ошибка обработки запроса", http.StatusInternalServerError)
@@ -87,7 +96,7 @@ func serveLogin(db dbService) http.HandlerFunc {
 			}
 
 			if len(users) != 1 {
-				http.Redirect(w, r, "/login", 401)
+				http.Redirect(w, r, "/login", 403)
 				return
 			}
 
@@ -177,11 +186,14 @@ func serveApi(db dbService) http.HandlerFunc {
 
 			login := r.PostFormValue("login")
 			pass := r.PostFormValue("pass")
+			pass, err = hashPass(pass)
+			if err != nil {
+				log.Printf("Ошибка хеширования", err)
+			}
 			usrType := r.PostFormValue("user_type")
 			actFlag := r.PostFormValue("active_flag")
 			lastVs := r.PostFormValue("last_visit")
 			lastV, err := time.Parse("2006-01-02T00:00:00Z", lastVs)
-
 			if err != nil {
 				log.Println("date forma validation error:", err.Error())
 			}
@@ -304,7 +316,31 @@ func serveApi(db dbService) http.HandlerFunc {
 			sens, err := db.getLastId("map_sensors")
 			apiDataResponse(w, sens, err)
 		}
+
 		//##############################################
+		if r.URL.Path == "/api/pressbutt" {
+			var (
+				msg     string
+				err     error
+				kotelId = "ESP_AA8914"
+			)
+			butt := r.PostFormValue("button")
+
+			ws := wsConnections[kotelId]
+			if ws == nil {
+				msg = "{success:false, error: {errorCode: 12377, errorMessage: 'Сессия не активна'}}"
+			} else {
+				msg = "{\"action\":\"pessButton\", \"butt\":\"" + butt + "\"}"
+				log.Printf("Sending message to %s: %s", kotelId, msg)
+				err = ws.WriteMessage(1, []byte(butt))
+				if err != nil {
+					log.Println("Sending message error:", err)
+				}
+			}
+
+			apiDataResponse(w, msg, err)
+		}
+
 		return
 	}
 }
@@ -355,4 +391,16 @@ func getSession(w http.ResponseWriter, r *http.Request) *sessions.Session {
 		session, err = sessStore.New(r, "session-name")
 	}
 	return session
+}
+
+//########################## helpers ############################
+
+func hashPass(p string) (string, error) {
+	h := sha256.New()
+	_, err := h.Write([]byte(p))
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }

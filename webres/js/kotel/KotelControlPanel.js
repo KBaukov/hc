@@ -189,7 +189,7 @@ Ext.define('KotelControlPanel', {
         var comm = this.command; 
         this.command = '';
         Ext.Ajax.request({
-            url: '/api/setcomm', scope: this, method: 'GET',
+            url: '/api/setcomm', scope: this, method: 'POST',
             params: {comm: comm},
             success: function(response, opts) {
               var ansv = Ext.decode(response.responseText);
@@ -209,7 +209,7 @@ Ext.define('KotelControlPanel', {
     },
     setDest: function() {
         Ext.Ajax.request({
-            url: '/api/setdestt', scope: this, method: 'GET',
+            url: '/api/setdestt', scope: this, method: 'POST',
             params: {desttp: this.destVal[0], destto: this.destVal[1], destkw: this.destVal[2]},
             success: function(response, opts) {
               var ansv = Ext.decode(response.responseText);
@@ -222,7 +222,7 @@ Ext.define('KotelControlPanel', {
     },
     pressButt: function(butt) {
         Ext.Ajax.request({
-            url: '/api/pressbutt', scope: this, method: 'GET',
+            url: '/api/pressbutt', scope: this, method: 'POST',
             params: {button: butt},
             success: function(response, opts) {
               var ansv = Ext.decode(response.responseText);

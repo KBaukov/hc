@@ -8,7 +8,7 @@ Ext.define('MapTemplate', {
         this.id = 'tMapPanel';
         this.margins = '0 0 0 0';
         this.collapsible = true;
-        this.collapsed = false;
+        this.collapsed = true;
         this.resizable = false;
         this.autoScroll = true;
         this.bodyPadding = 10;

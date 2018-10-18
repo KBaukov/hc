@@ -28,7 +28,7 @@ const (
 	delMapQuery  = `DELETE FROM hc.maps WHERE id=?`
 	//lastMapIdQuery = `SELECT max(id) as id FROM hc.maps`
 
-	getMapSensorsQuery = `SELECT * FROM hc.map_sensors WHERE id= ? ORDER BY id`
+	getMapSensorsQuery = `SELECT * FROM hc.map_sensors WHERE map_id= ? ORDER BY id`
 	addMapSensorQuery  = `INSERT INTO hc.map_sensors (map_id, device_id, type, xk, yk, pict, description, id) VALUES (?,?,?,?,?,?,?,?)`
 	updMapSensorQuery  = `UPDATE hc.map_sensors SET map_id=?, device_id=?, type=?, xk=?, yk=?, pict=?, description=? WHERE id=?`
 	delMapSensorQuery  = `DELETE FROM hc.map_sensors WHERE id=?`
@@ -158,7 +158,7 @@ func (db database) editUser(id int, login string, pass string, userType string, 
 
 	execQuery := updUserQuery
 
-	lastId, err := db.getLastId("Users")
+	lastId, err := db.getLastId("users")
 	if err != nil {
 		return false, err
 	}
