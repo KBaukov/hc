@@ -118,7 +118,7 @@ Ext.define('Devices', {
                           if(ansv.success) {  
                             this.getStore().removeAt(rowIndex);           
                             this.count = this.store.count();
-                          } else error_mes('Ошибка', '!!!!!!!!!!!!!!!!!!!!!!!');  
+                          } else error_mes('Ошибка', ansv.msg);  
                         },
                         failure: function() { this.unmask(); }
                     });
@@ -166,7 +166,7 @@ Ext.define('Devices', {
                       if(ansv.success) {  
                         this.store.reload();            
                         this.count = this.store.count();
-                      } else error_mes('Ошибка', '!!!!!!!!!!!!!!!!!!!!!!!');  
+                      } else error_mes('Ошибка', ansv.msg);  
                     },
                     failure: function() { this.unmask(); }
                 });
@@ -186,7 +186,7 @@ Ext.define('Devices', {
             this.store.loadData(ansv.data);            
             this.count = this.store.count();
             this.lastId = this.store.data.items[this.count-1].data.id;
-          } else error_mes('Ошибка', '!!!!!!!!!!!!!!!!!!!!!!!');  
+          } else error_mes('Ошибка', ansv.msg);  
         },
         failure: function() { this.unmask(); }
       });

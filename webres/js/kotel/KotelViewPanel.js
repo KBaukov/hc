@@ -97,7 +97,7 @@ Ext.define('KotelViewPanel', {
     },
     getValues: function() {
         Ext.Ajax.request({
-            url: '/api/getvalues', scope: this, method: 'GET',
+            url: '/api/kotel/getvalues', scope: this, method: 'GET',
             success: function(response, opts) {
               var ansv = Ext.decode(response.responseText);
               if(ansv.success) {  
@@ -117,7 +117,7 @@ Ext.define('KotelViewPanel', {
                   this.papa.kotelControlPanel.dispCurrentView();
                   this.resize();
 
-              } else error_mes('Ошибка', 'ErrorCode:'+ansv.error.errorCode+"; "+ansv.error.errorMessage);  
+              } else error_mes('Ошибка', ansv.msg);  
             },
             failure: function() { }
         });
@@ -126,7 +126,7 @@ Ext.define('KotelViewPanel', {
         
         this.destt = parseFloat(Ext.getCmp('destTempField').getValue());
         Ext.Ajax.request({
-            url: '/api/setdestt', scope: this, method: 'GET',
+            url: '/api/kotel/setdest', scope: this, method: 'POST',
             params: {desttc: this.destt.toFixed(2)},
             success: function(response, opts) {
               var ansv = Ext.decode(response.responseText);
@@ -139,7 +139,7 @@ Ext.define('KotelViewPanel', {
                     fn: null
                 });
 
-              } else error_mes('Ошибка', 'ErrorCode:'+ansv.error.errorCode+"; "+ansv.error.errorMessage);  
+              } else error_mes('Ошибка', ansv.msg);  
             },
             failure: function() { }
         });

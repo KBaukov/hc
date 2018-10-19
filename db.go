@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"time"
 
@@ -20,7 +21,11 @@ const (
 	addDeviceQuery  = `INSERT INTO hc.devices (type, name, ip, active_flag, description, id) VALUES (?,?,?,?,?,?)`
 	updDeviceQuery  = `UPDATE hc.devices SET type = ?, name = ?, ip = ?, active_flag = ?, description = ? WHERE id=?`
 	delDeviceQuery  = `DELETE FROM hc.devices WHERE id=?`
-	//lastDevIdQuery  = `SELECT max(id) as id FROM hc.devices`
+
+	kotelDevIdQuery    = `SELECT name FROM hc.devices WHERE type="KotelController"`
+	getKotelDataQuery  = `SELECT DEVICE_ID , TP, 'TO', PR, KW, DEST_TP, DEST_TO, DEST_PR, DEST_KW, DEST_TC FROM hc.kotel`
+	updKotelDevIdQuery = `UPDATE hc.kotel SET device_id = ? WHERE 1`
+	updKotelDataQuery  = `UPDATE hc.kotel SET tp= ?, to= ?, pr= ?, kw= ?, desttp= ?, desto= ?, destpr= ?, destkw= ?, destc= ? WHERE 1`
 
 	getMapsQuery = `SELECT * FROM hc.maps ORDER BY id`
 	addMapQuery  = `INSERT INTO hc.maps (title, pict, w, h, description, id) VALUES (?,?,?,?,?,?)`
@@ -53,6 +58,10 @@ type dbService interface {
 	getDevices() ([]Device, error)
 	editDevice(id int, devType string, devName string, ip string, actFlag string, descr string) (bool, error)
 	delDevice(id int) (bool, error)
+
+	getKotelID() (string, error)
+	getKotelData() (KotelData, error)
+	updtKotelData(tp float64, to float64, pr float64, kw int, desttp float64, desto float64, destpr float64, destkw int, destc float64) error
 
 	getMaps() ([]Map, error)
 	editMap(id int, title string, pict string, w int, h int, descr string) (bool, error)
@@ -231,11 +240,30 @@ func (db database) getDevices() ([]Device, error) {
 
 func (db database) editDevice(id int, devType string, devName string, ip string, actFlag string, descr string) (bool, error) {
 
-	var lastId int
+	var (
+		lastId int
+		kId    string
+	)
+	if devType == "KotelController" {
+		kId, _ = db.getKotelID()
+		if kId != devName {
+			return false, errors.New("Устройство с типом KotelController уже существует. Такое устройсто может быть только одно.")
+		} else {
+			stmt, err := db.conn.Prepare(updKotelDevIdQuery)
+			if err != nil {
+				return false, err
+			}
+			_, err = stmt.Exec(devName)
+			if err != nil {
+				return false, err
+			}
+		}
+
+	}
 
 	execQuery := updDeviceQuery
 
-	lastId, err := db.getLastId("Device")
+	lastId, err := db.getLastId("device")
 	if err != nil {
 		return false, err
 	}
@@ -273,8 +301,83 @@ func (db database) delDevice(id int) (bool, error) {
 	return true, err
 }
 
-//################## Maps #########################
+//################# Kotel #####################
+func (db database) getKotelID() (string, error) {
+	var kId string
+	stmt, err := db.conn.Prepare(kotelDevIdQuery)
+	if err != nil {
+		return kId, err
+	}
+	defer stmt.Close()
 
+	rows, err := stmt.Query()
+
+	for rows.Next() {
+		err = rows.Scan(&kId)
+		if err != nil {
+			return kId, err
+		}
+	}
+
+	return kId, err
+}
+
+func (db database) getKotelData() (KotelData, error) {
+	var kData KotelData
+
+	stmt, err := db.conn.Prepare(getKotelDataQuery)
+	if err != nil {
+		return kData, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return kData, err
+	}
+
+	for rows.Next() {
+		var (
+			deviceId string
+			tp       float64
+			to       float64
+			pr       float64
+			kw       int
+			desttp   float64
+			destto   float64
+			destpr   float64
+			destkw   int
+			destc    float64
+		)
+		//SELECT DEVICE_ID , TP, TO, PR, KW, DEST_TP, DEST_TO, DEST_PR, DEST_KW, DEST_TC FROM hc.kotel
+		err = rows.Scan(&deviceId, &tp, &to, &pr, &kw, &desttp, &destto, &destpr, &destkw, &destc)
+		if err != nil {
+			return kData, err
+		}
+
+		kData = KotelData{deviceId, tp, to, pr, kw, desttp, destto, destpr, destkw, destc}
+	}
+
+	return kData, err
+}
+
+func (db database) updtKotelData(tp float64, to float64, pr float64, kw int, desttp float64, desto float64, destpr float64, destkw int, destc float64) error {
+
+	stmt, err := db.conn.Prepare(updKotelDevIdQuery)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(tp, to, pr, kw, desttp, desto, destpr, destkw, destc)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+//################## Maps #########################
 func (db database) getMaps() ([]Map, error) {
 	maps := make([]Map, 0)
 	stmt, err := db.conn.Prepare(getMapsQuery)

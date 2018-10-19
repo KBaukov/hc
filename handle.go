@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -137,10 +138,6 @@ func serveApi(db dbService) http.HandlerFunc {
 
 		log.Printf("incoming request in: %v", r.URL.Path)
 
-		if r.URL.Path == "/api/getvalues" {
-			data := KotelData{0, 30.56, 45.12, 2.21, 11, 30.0, 45.0, 2.25, 11, 25.0, time.Now()}
-			apiDataResponse(w, data, nil)
-		}
 		//##############
 		if r.URL.Path == "/api/devices" {
 			devices, err := db.getDevices()
@@ -318,17 +315,75 @@ func serveApi(db dbService) http.HandlerFunc {
 		}
 
 		//##############################################
-		if r.URL.Path == "/api/pressbutt" {
+		if r.URL.Path == "/api/kotel/getvalues" {
+			data, err := db.getKotelData()
+			//data := KotelData{0, 30.56, 45.12, 2.21, 11, 30.0, 45.0, 2.25, 11, 25.0, time.Now()}
+			apiDataResponse(w, data, err)
+		}
+		if r.URL.Path == "/api/kotel/setdest" {
+
+			tp, err := strconv.ParseFloat(r.PostFormValue("tp"), 64)
+			to, err := strconv.ParseFloat(r.PostFormValue("to"), 64)
+			pr, err := strconv.ParseFloat(r.PostFormValue("pr"), 64)
+			kw, err := strconv.Atoi(r.PostFormValue("kw"))
+			desttp, err := strconv.ParseFloat(r.PostFormValue("desttp"), 64)
+			destto, err := strconv.ParseFloat(r.PostFormValue("destto"), 64)
+			destpr, err := strconv.ParseFloat(r.PostFormValue("destpr"), 64)
+			destkw, err := strconv.Atoi(r.PostFormValue("destkw"))
+			destc, err := strconv.ParseFloat(r.PostFormValue("desttc"), 64)
+			if err != nil {
+
+			}
+
+			kd, err := db.getKotelData()
+
+			if tp == 0 {
+				tp = kd.TP
+			}
+			if pr == 0 {
+				pr = kd.PR
+			}
+			if kw == 0 {
+				kw = kd.KW
+			}
+			if desttp == 0 {
+				desttp = kd.DESTTP
+			}
+			if destto == 0 {
+				destto = kd.DESTTO
+			}
+			if destkw == 0 {
+				destkw = kd.DESTKW
+			}
+			if destpr == 0 {
+				destpr = kd.DESTPR
+			}
+			if destc == 0 {
+				destc = kd.DESTС
+			}
+
+			err = db.updtKotelData(tp, to, pr, kw, desttp, destto, destpr, destkw, destc)
+
+			apiDataResponse(w, []int{}, err)
+
+		}
+		if r.URL.Path == "/api/kotel/pressbutt" {
 			var (
 				msg     string
 				err     error
-				kotelId = "ESP_AA8914"
+				kotelId string
 			)
+
+			kotelId, err = db.getKotelID()
+			if err != nil || kotelId == "" {
+				err = errors.New("Котел не найден")
+			}
+
 			butt := r.PostFormValue("button")
 
 			ws := wsConnections[kotelId]
 			if ws == nil {
-				msg = "{success:false, error: {errorCode: 12377, errorMessage: 'Сессия не активна'}}"
+				err = errors.New("Сессия не активна")
 			} else {
 				msg = "{\"action\":\"pessButton\", \"butt\":\"" + butt + "\"}"
 				log.Printf("Sending message to %s: %s", kotelId, msg)
@@ -350,7 +405,7 @@ func apiDataResponse(w http.ResponseWriter, data interface{}, err error) {
 	succes := true
 
 	if err != nil {
-		http.Error(w, "Ошибка обработки запроса", http.StatusInternalServerError)
+		//http.Error(w, "Ошибка обработки запроса", http.StatusInternalServerError)
 		log.Printf("Ошибка: %v", err)
 		errMsg = err.Error()
 		succes = false
@@ -360,7 +415,7 @@ func apiDataResponse(w http.ResponseWriter, data interface{}, err error) {
 
 	json, err := json.Marshal(dataResp)
 	if err != nil {
-		http.Error(w, "Ошибка формирования ответа", http.StatusInternalServerError)
+		//http.Error(w, "Ошибка формирования ответа", http.StatusInternalServerError)
 		log.Printf("Ошибка маршалинга: %v", err)
 		return
 	}
@@ -369,6 +424,18 @@ func apiDataResponse(w http.ResponseWriter, data interface{}, err error) {
 	if err != nil {
 		log.Printf("Ошибка записи результата запроса: %v", err)
 	}
+}
+
+//########################## helpers ############################
+
+func hashPass(p string) (string, error) {
+	h := sha256.New()
+	_, err := h.Write([]byte(p))
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func createSession(w http.ResponseWriter, r *http.Request, o interface{}, key string) {
@@ -391,16 +458,4 @@ func getSession(w http.ResponseWriter, r *http.Request) *sessions.Session {
 		session, err = sessStore.New(r, "session-name")
 	}
 	return session
-}
-
-//########################## helpers ############################
-
-func hashPass(p string) (string, error) {
-	h := sha256.New()
-	_, err := h.Write([]byte(p))
-	if err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
 }

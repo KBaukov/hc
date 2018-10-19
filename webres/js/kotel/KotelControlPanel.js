@@ -202,33 +202,33 @@ Ext.define('KotelControlPanel', {
                     fn: null
                 });
                 //this.command = '';
-              } else error_mes('Ошибка', 'ErrorCode:'+ansv.error.errorCode+"; "+ansv.error.errorMessage);  
+              } else error_mes('Ошибка', ansv.msg);  
             },
             failure: function() { }
         });
     },
     setDest: function() {
         Ext.Ajax.request({
-            url: '/api/setdestt', scope: this, method: 'POST',
+            url: '/api/kotel/setdest', scope: this, method: 'POST',
             params: {desttp: this.destVal[0], destto: this.destVal[1], destkw: this.destVal[2]},
             success: function(response, opts) {
               var ansv = Ext.decode(response.responseText);
               if(ansv.success) {  
 
-              } else error_mes('Ошибка', 'ErrorCode:'+ansv.error.errorCode+"; "+ansv.error.errorMessage);  
+              } else error_mes('Ошибка', ansv.msg);  
             },
             failure: function() { }
         });
     },
     pressButt: function(butt) {
         Ext.Ajax.request({
-            url: '/api/pressbutt', scope: this, method: 'POST',
+            url: '/api/kotel/pressbutt', scope: this, method: 'POST',
             params: {button: butt},
             success: function(response, opts) {
               var ansv = Ext.decode(response.responseText);
               if(ansv.success) {  
 
-              } else error_mes('Ошибка', 'ErrorCode:'+ansv.error.errorCode+"; "+ansv.error.errorMessage);  
+              } else error_mes('Ошибка', ansv.msg);  
             },
             failure: function() { }
         });

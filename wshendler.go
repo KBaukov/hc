@@ -114,7 +114,7 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 		log.Println("upgrade:", err)
 		return
 	}
-	//defer ws.Close()
+	//defer ws.Close() !!!! Important
 
 	wsConnections[deviceId] = ws
 

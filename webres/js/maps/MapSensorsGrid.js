@@ -124,7 +124,7 @@ Ext.define('MapSensorsGrid', {
                           if(ansv.success) {  
                             this.getStore().removeAt(rowIndex);           
                             this.count = this.store.count();
-                          } else error_mes('Ошибка', '!!!!!!!!!!!!!!!!!!!!!!!');  
+                          } else error_mes('Ошибка', ansv.msg);  
                         },
                         failure: function() { this.unmask(); }
                     });
@@ -164,7 +164,7 @@ Ext.define('MapSensorsGrid', {
                       if(ansv.success) {  
                         this.loadData(this.mapId);            
                         //this.count = this.store.count();
-                      } else error_mes('Ошибка', '!!!!!!!!!!!!!!!!!!!!!!!');  
+                      } else error_mes('Ошибка', ansv.msg);  
                     },
                     failure: function() { this.unmask(); }
                 });
@@ -189,7 +189,7 @@ Ext.define('MapSensorsGrid', {
                 upData.sensors = ansv.data;
                 this.papa.mapTemplate.setContent(upData);
             }
-          } else error_mes('Ошибка', '!!!!!!!!!!!!!!!!!!!!!!!');  
+          } else error_mes('Ошибка', ansv.msg);  
         },
         failure: function() { this.unmask(); }
       });
@@ -204,7 +204,7 @@ Ext.define('MapSensorsGrid', {
             this.lastId = ansv.data;
             if(this.isInit) this.addSensor();
             else this.isInit = true;
-          } else error_mes('Ошибка', '!!!!!!!!!!!!!!!!!!!!!!!');  
+          } else error_mes('Ошибка', ansv.msg);  
         },
         failure: function() { this.unmask(); }
       });
