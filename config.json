@@ -1,5 +1,5 @@
 {
-    "DbConnectionString": "root:koko@tcp(10.199.28.102:3306)/hc?parseTime=true",
+    "DbConnectionString": "root:koko@tcp(localhost:3306)/hc?parseTime=true",
     "LoggerPath": "",
 	"Server": {
 		"Address": "0.0.0.0",
@@ -7,5 +7,6 @@
 		"TLS": true,
 		"CertificatePath": "server.crt",
 		"KeyPath": "server.key"
-	}
+	},
+	"WsAllowedOrigin": "HomeControlApp"
 }

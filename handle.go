@@ -85,7 +85,7 @@ func serveLogin(db dbService) http.HandlerFunc {
 
 			pass, err := hashPass(pass)
 			if err != nil {
-				log.Printf("Ошибка хеширования", err)
+				log.Println("Ошибка хеширования", err)
 			}
 
 			//log.Println("pass: ", pass)
@@ -185,7 +185,7 @@ func serveApi(db dbService) http.HandlerFunc {
 			pass := r.PostFormValue("pass")
 			pass, err = hashPass(pass)
 			if err != nil {
-				log.Printf("Ошибка хеширования", err)
+				log.Println("Ошибка хеширования", err)
 			}
 			usrType := r.PostFormValue("user_type")
 			actFlag := r.PostFormValue("active_flag")
@@ -322,10 +322,10 @@ func serveApi(db dbService) http.HandlerFunc {
 		}
 		if r.URL.Path == "/api/kotel/setdest" {
 
-			tp, err := strconv.ParseFloat(r.PostFormValue("tp"), 64)
-			to, err := strconv.ParseFloat(r.PostFormValue("to"), 64)
-			pr, err := strconv.ParseFloat(r.PostFormValue("pr"), 64)
-			kw, err := strconv.Atoi(r.PostFormValue("kw"))
+			//			tp, err := strconv.ParseFloat(r.PostFormValue("tp"), 64)
+			//			to, err := strconv.ParseFloat(r.PostFormValue("to"), 64)
+			//			pr, err := strconv.ParseFloat(r.PostFormValue("pr"), 64)
+			//			kw, err := strconv.Atoi(r.PostFormValue("kw"))
 			desttp, err := strconv.ParseFloat(r.PostFormValue("desttp"), 64)
 			destto, err := strconv.ParseFloat(r.PostFormValue("destto"), 64)
 			destpr, err := strconv.ParseFloat(r.PostFormValue("destpr"), 64)
@@ -337,15 +337,18 @@ func serveApi(db dbService) http.HandlerFunc {
 
 			kd, err := db.getKotelData()
 
-			if tp == 0 {
-				tp = kd.TP
-			}
-			if pr == 0 {
-				pr = kd.PR
-			}
-			if kw == 0 {
-				kw = kd.KW
-			}
+			//			if tp == 0 {
+			//				tp = kd.TP
+			//			}
+			//			if to == 0 {
+			//				to = kd.TO
+			//			}
+			//			if pr == 0 {
+			//				pr = kd.PR
+			//			}
+			//			if kw == 0 {
+			//				kw = kd.KW
+			//			}
 			if desttp == 0 {
 				desttp = kd.DESTTP
 			}
@@ -362,32 +365,32 @@ func serveApi(db dbService) http.HandlerFunc {
 				destc = kd.DESTС
 			}
 
-			err = db.updtKotelData(tp, to, pr, kw, desttp, destto, destpr, destkw, destc)
+			err = db.updKotelDestData(destto, desttp, destkw, destpr, destc)
 
 			apiDataResponse(w, []int{}, err)
 
 		}
 		if r.URL.Path == "/api/kotel/pressbutt" {
 			var (
-				msg     string
-				err     error
-				kotelId string
+				msg       string
+				err       error
+				kotelName string
 			)
 
-			kotelId, err = db.getKotelID()
-			if err != nil || kotelId == "" {
+			_, kotelName, err = db.getKotelID()
+			if err != nil || kotelName == "" {
 				err = errors.New("Котел не найден")
 			}
 
 			butt := r.PostFormValue("button")
 
-			ws := wsConnections[kotelId]
+			ws := wsConnections[kotelName]
 			if ws == nil {
 				err = errors.New("Сессия не активна")
 			} else {
 				msg = "{\"action\":\"pessButton\", \"butt\":\"" + butt + "\"}"
-				log.Printf("Sending message to %s: %s", kotelId, msg)
-				err = ws.WriteMessage(1, []byte(butt))
+				log.Printf("Sending message to %s: %s", kotelName, msg)
+				err = ws.WriteMessage(1, []byte(msg))
 				if err != nil {
 					log.Println("Sending message error:", err)
 				}

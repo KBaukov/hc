@@ -55,16 +55,15 @@ type MapSensor struct {
 
 type KotelData struct {
 	DEVICE_ID string  `json:"device_id"`
-	TP        float64 `json:"tp"`
 	TO        float64 `json:"to"`
-	PR        float64 `json:"pr"`
+	TP        float64 `json:"tp"`
 	KW        int     `json:"kw"`
-	DESTTP    float64 `json:"desttp"`
+	PR        float64 `json:"pr"`
 	DESTTO    float64 `json:"destto"`
-	DESTPR    float64 `json:"destpr"`
+	DESTTP    float64 `json:"desttp"`
 	DESTKW    int     `json:"destkw"`
-	DESTС     float64 `json:"destс"`
-	//DATE      time.Time `json:"date"`
+	DESTPR    float64 `json:"destpr"`
+	DESTС     float64 `json:"desttc"`
 }
 
 type SensorsData struct {
@@ -74,4 +73,10 @@ type SensorsData struct {
 	H           float64   `json:"h"`
 	P           float64   `json:"p"`
 	DATE        time.Time `json:"date"`
+}
+
+type WsSendData struct {
+	ACTION string      `json"action"`
+	TYPE   string      `json"type"`
+	DATA   interface{} `json:"data"`
 }

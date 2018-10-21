@@ -18,6 +18,7 @@ var (
 	configurationPath = flag.String("config", "config.json", "Путь к файлу конфигурации")
 	config            = loadConfig(*configurationPath)
 	wsConnections     = make(map[string]*websocket.Conn)
+	wsAllowedOrigin   = config.WsAllowedOrigin
 )
 
 func init() {
@@ -56,7 +57,7 @@ func main() {
 	http.HandleFunc("/webres/", serveWebRes)
 	http.HandleFunc("/api/", serveApi(db))
 	//http.HandleFunc("/ws", STOMPserver)
-	http.HandleFunc("/ws", serveWs)
+	http.HandleFunc("/ws", serveWs(db))
 	http.HandleFunc("/homews", serveHomeWs)
 	//log.Fatal(http.ListenAndServe(*addr, nil))
 

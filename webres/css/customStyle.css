@@ -232,70 +232,81 @@ input.grNumEditor {
 
 
 div#cpBase{
-  height: 909px; width:780px;
+  height: 455px; width:391px;
   background-image: url("../img/kotel/CP_base.png");
 }
 
 div#dig1{
-  height: 156px; width:103px;
+  height: 78px; width:53px;
   background-image: url("../img/kotel/dr.png");
-  top: 248px; left: 287px;
+  top: 130px; left: 148px;
   position: absolute;
 }
 div#dig2{
-  height: 156px; width:103px;
+  height: 78px; width:53px;
   background-image: url("../img/kotel/dr.png");
-  top: 248px; left: 395px;
+  top: 130px; left: 200px;
   position: absolute;
 }
 div#dot{
-  height: 23px; width:23px;
+  height: 13px; width:13px;
   background-image: url("../img/kotel/drd.png");
-  top: 381px; left: 367px;
+  top: 200px; left: 190px;
   position: absolute;
   opacity: 0;
 }
 div#leftButt{
-  height: 123px; width:293px;
+  height: 62px; width:147px;
   background-image: url("../img/kotel/leftButt.png");
-  top: 544px; left: 85px;
+  top: 277px; left: 48px;
   position: absolute;
   background-position-y: top;
 }
 div#rightButt{
-  height: 126px; width:293px;
+  height: 62px; width:147px;
   background-image: url("../img/kotel/rightButt.png");
-  top: 542px; left: 410px;
+  top: 277px; left: 210px;
   position: absolute;
   background-position-y: top;
 }
 
-div#okButt{
-  height: 126px; width:364px;
-  background-image: url("../img/kotel/okButt.png");
-  top: 694px; left: 210px;
+div#mokButt{
+  height: 63px; width:182px;
+  background-image: url("../img/kotel/mokButt.png");
+  top: 353px; left: 112px;
   position: absolute;
   background-position-y: top;
 }
 div.led{
-  height: 57px; width:59px;
+  height: 28px; width:30px;
   background-image: url("../img/kotel/ledOn.png");
-  top: 103px; 
+  top: 56px; 
   position: absolute;
   opacity: 1;
 }
-div#led1 { left: 81px; } /*  81, 222, 363, 504 */
-div#led2 { left: 645px; opacity: 1;}
+div#led1 { left: 46px; } /*  81, 222, 363, 504 */
+div#led2 { left: 328px; opacity: 1;}
 
 div#rightButt:hover { background-position-y: bottom;}
 div#leftButt:hover { background-position-y: bottom;}
-div#okButt:hover { background-position-y: bottom;}
+div#mokButt:hover { background-position-y: bottom;}
 
 
 div.tempIcon {
     height: 48px;
     width: 86px;
     background-image: url("../img/temperature-48.png");
+    background-repeat: no-repeat;
+    background-position: left center;
+    position: absolute;
+    text-align: right;
+    color: #ff6600;
+}
+
+div.kotelIcon {
+    height: 48px;
+    width: 86px;
+    background-image: url("../img/kotel.png");
     background-repeat: no-repeat;
     background-position: left center;
     position: absolute;

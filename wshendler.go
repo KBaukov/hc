@@ -8,8 +8,10 @@ import (
 	//"bufio"
 	//"flag"
 	//"io"
+	"encoding/json"
 	"log"
 	"net/http"
+
 	//"os"
 	"strings"
 	//"os/exec"
@@ -96,42 +98,50 @@ func internalError(ws *websocket.Conn, msg string, err error) {
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		origin := r.Header.Get("Origin")
-		log.Println("Origin:", origin)
+		deviceOrigin := r.Header.Get("Origin")
+		if wsAllowedOrigin != deviceOrigin {
+			return false
+		}
+		log.Println("Origin:", deviceOrigin)
 
 		return true
 	},
 }
 
-func serveWs(w http.ResponseWriter, r *http.Request) {
-	var ws *websocket.Conn
-	var err error
-	deviceId := r.Header.Get("DeviceId")
-	log.Println("incoming request from: ", deviceId)
+func serveWs(db dbService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 
-	ws, err = upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println("upgrade:", err)
-		return
+		var ws *websocket.Conn
+		var err error
+		deviceId := r.Header.Get("DeviceId")
+
+		log.Println("incoming request from: ", deviceId)
+
+		ws, err = upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Println("upgrade:", err)
+			return
+		}
+		//defer ws.Close() !!!! Important
+
+		wsConnections[deviceId] = ws
+
+		log.Println("Ws Connection: ", ws)
+		go wsProcessor(ws, db)
+
 	}
-	//defer ws.Close() !!!! Important
-
-	wsConnections[deviceId] = ws
-
-	log.Println("Ws Connection: ", ws)
-	go wsProcessor(ws)
-
 }
 
-func wsProcessor(c *websocket.Conn) {
+func wsProcessor(c *websocket.Conn, db dbService) {
 	defer c.Close()
+	devId := getDevIdByConn(c)
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
-			log.Println("read:", err)
+			log.Println("[WS]:recv:", err)
 			break
 		}
-		log.Printf("recv: %s, type: %d", message, mt)
+		log.Printf("[WS]:recv: %s, type: %d", message, mt)
 		msg := string(message)
 
 		if strings.Contains(msg, "{action:connect") {
@@ -143,10 +153,38 @@ func wsProcessor(c *websocket.Conn) {
 		if strings.Contains(msg, "{\"action:\":\"datasend\"") {
 
 			if strings.Contains(msg, "\"type\":\"koteldata\"") {
+				var data KotelData
 
-				if !sendMsg(c, "{action:datasend, success:true}") {
-					break
+				wsData := WsSendData{"", "", ""}
+
+				err = json.Unmarshal([]byte(msg), &wsData)
+				if err != nil {
+					log.Println("Error data unmarshaling: ", err)
 				}
+
+				dd, err := json.Marshal(wsData.DATA)
+				if err != nil {
+					log.Println("Error data marshaling: ", err)
+				}
+
+				err = json.Unmarshal(dd, &data)
+				if err != nil {
+					log.Println("Error data unmarshaling: ", err)
+				}
+
+				log.Println("get kotel data:", data)
+
+				if !sendMsg(c, "{action:datasend,success:true}") {
+					log.Println("Send to " + devId + ": failed")
+					break
+				} else {
+					log.Println("Send to " + devId + ": success")
+					err = db.updKotelMeshData(data.TO, data.TP, data.KW, data.PR)
+					if err != nil {
+						log.Println("Error data writing in db: ", err)
+					}
+				}
+
 			}
 
 		}
@@ -165,10 +203,20 @@ func wsProcessor(c *websocket.Conn) {
 func sendMsg(c *websocket.Conn, m string) bool {
 	err := c.WriteMessage(1, []byte(m))
 	if err != nil {
-		log.Println("write:", err)
+		log.Println("[WS]:send:", err)
 		return false
 	}
 	return true
+}
+
+func getDevIdByConn(c *websocket.Conn) string {
+	for k, v := range wsConnections {
+		if v == c {
+			return k
+		}
+	}
+
+	return ""
 }
 
 func serveHomeWs(w http.ResponseWriter, r *http.Request) {

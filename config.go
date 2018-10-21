@@ -16,6 +16,7 @@ type configuration struct {
 		CertificatePath string
 		KeyPath         string
 	}
+	WsAllowedOrigin string
 }
 
 // loadConfig читает и парсит настройки сервиса

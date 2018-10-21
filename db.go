@@ -22,10 +22,11 @@ const (
 	updDeviceQuery  = `UPDATE hc.devices SET type = ?, name = ?, ip = ?, active_flag = ?, description = ? WHERE id=?`
 	delDeviceQuery  = `DELETE FROM hc.devices WHERE id=?`
 
-	kotelDevIdQuery    = `SELECT name FROM hc.devices WHERE type="KotelController"`
-	getKotelDataQuery  = `SELECT DEVICE_ID , TP, 'TO', PR, KW, DEST_TP, DEST_TO, DEST_PR, DEST_KW, DEST_TC FROM hc.kotel`
-	updKotelDevIdQuery = `UPDATE hc.kotel SET device_id = ? WHERE 1`
-	updKotelDataQuery  = `UPDATE hc.kotel SET tp= ?, to= ?, pr= ?, kw= ?, desttp= ?, desto= ?, destpr= ?, destkw= ?, destc= ? WHERE 1`
+	kotelDevIdQuery       = `SELECT id, name FROM hc.devices WHERE type="KotelController"`
+	getKotelDataQuery     = "SELECT DEVICE_ID ,`TO`, TP, KW, PR, DEST_TO, DEST_TP, DEST_KW, DEST_PR, DEST_TC FROM hc.kotel"
+	updKotelDevIdQuery    = `UPDATE hc.kotel SET device_id = ? WHERE 1`
+	updKotelDestDataQuery = "UPDATE hc.kotel SET dest_to= ?, dest_tp= ?, dest_kw= ?, dest_pr= ?, dest_tc= ? WHERE 1"
+	updKotelMeshDataQuery = "UPDATE hc.kotel SET `to`= ?, tp= ?, kw= ?, pr= ? WHERE 1"
 
 	getMapsQuery = `SELECT * FROM hc.maps ORDER BY id`
 	addMapQuery  = `INSERT INTO hc.maps (title, pict, w, h, description, id) VALUES (?,?,?,?,?,?)`
@@ -59,9 +60,10 @@ type dbService interface {
 	editDevice(id int, devType string, devName string, ip string, actFlag string, descr string) (bool, error)
 	delDevice(id int) (bool, error)
 
-	getKotelID() (string, error)
+	getKotelID() (int, string, error)
 	getKotelData() (KotelData, error)
-	updtKotelData(tp float64, to float64, pr float64, kw int, desttp float64, desto float64, destpr float64, destkw int, destc float64) error
+	updKotelMeshData(to float64, tp float64, kw int, pr float64) error
+	updKotelDestData(destto float64, desttp float64, destkw int, destpr float64, destc float64) error
 
 	getMaps() ([]Map, error)
 	editMap(id int, title string, pict string, w int, h int, descr string) (bool, error)
@@ -242,11 +244,11 @@ func (db database) editDevice(id int, devType string, devName string, ip string,
 
 	var (
 		lastId int
-		kId    string
+		kName  string
 	)
 	if devType == "KotelController" {
-		kId, _ = db.getKotelID()
-		if kId != devName {
+		_, kName, _ = db.getKotelID()
+		if kName != devName {
 			return false, errors.New("Устройство с типом KotelController уже существует. Такое устройсто может быть только одно.")
 		} else {
 			stmt, err := db.conn.Prepare(updKotelDevIdQuery)
@@ -302,28 +304,36 @@ func (db database) delDevice(id int) (bool, error) {
 }
 
 //################# Kotel #####################
-func (db database) getKotelID() (string, error) {
-	var kId string
+func (db database) getKotelID() (int, string, error) {
+	var (
+		kId   int
+		kName string
+	)
 	stmt, err := db.conn.Prepare(kotelDevIdQuery)
 	if err != nil {
-		return kId, err
+		return kId, kName, err
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query()
 
 	for rows.Next() {
-		err = rows.Scan(&kId)
+		err = rows.Scan(&kId, &kName)
 		if err != nil {
-			return kId, err
+			return kId, kName, err
 		}
 	}
 
-	return kId, err
+	return kId, kName, err
 }
 
 func (db database) getKotelData() (KotelData, error) {
-	var kData KotelData
+	var (
+		kData KotelData
+		//kId   int
+	)
+
+	//kId, _, err = db.getKotelID()
 
 	stmt, err := db.conn.Prepare(getKotelDataQuery)
 	if err != nil {
@@ -339,37 +349,52 @@ func (db database) getKotelData() (KotelData, error) {
 	for rows.Next() {
 		var (
 			deviceId string
-			tp       float64
 			to       float64
-			pr       float64
+			tp       float64
 			kw       int
-			desttp   float64
+			pr       float64
 			destto   float64
-			destpr   float64
+			desttp   float64
 			destkw   int
-			destc    float64
+			destpr   float64
+			desttc   float64
 		)
-		//SELECT DEVICE_ID , TP, TO, PR, KW, DEST_TP, DEST_TO, DEST_PR, DEST_KW, DEST_TC FROM hc.kotel
-		err = rows.Scan(&deviceId, &tp, &to, &pr, &kw, &desttp, &destto, &destpr, &destkw, &destc)
+		err = rows.Scan(&deviceId, &to, &tp, &kw, &pr, &destto, &desttp, &destkw, &destpr, &desttc)
 		if err != nil {
 			return kData, err
 		}
 
-		kData = KotelData{deviceId, tp, to, pr, kw, desttp, destto, destpr, destkw, destc}
+		kData = KotelData{deviceId, to, tp, kw, pr, destto, desttp, destkw, destpr, desttc}
 	}
 
 	return kData, err
 }
 
-func (db database) updtKotelData(tp float64, to float64, pr float64, kw int, desttp float64, desto float64, destpr float64, destkw int, destc float64) error {
+func (db database) updKotelDestData(destto float64, desttp float64, destkw int, destpr float64, destc float64) error {
 
-	stmt, err := db.conn.Prepare(updKotelDevIdQuery)
+	stmt, err := db.conn.Prepare(updKotelDestDataQuery)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(tp, to, pr, kw, desttp, desto, destpr, destkw, destc)
+	_, err = stmt.Exec(destto, desttp, destkw, destpr, destc)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (db database) updKotelMeshData(to float64, tp float64, kw int, pr float64) error {
+
+	stmt, err := db.conn.Prepare(updKotelMeshDataQuery)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(to, tp, kw, pr)
 	if err != nil {
 		return err
 	}

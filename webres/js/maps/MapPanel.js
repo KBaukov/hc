@@ -21,7 +21,7 @@ Ext.define('MapPanel', {
         this.title = this.mapData.title;
         this.id = 'map'+this.mapData.id;
         this.tpl = [
-            '<div style="text-align:center">','<img id="mapImage_{id}" src="{pict}" />','</div>',
+            '<div style="text-align:center">','<img id="mapImage_{id}" src="/webres/img/maps/{pict}" />','</div>',
             '<tpl for="sensors">',
                 '<div class="{type}" id="{parent.id}_sensor_{device_id}"></div>',
             '</tpl>'
